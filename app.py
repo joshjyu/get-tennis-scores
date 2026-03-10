@@ -2,6 +2,9 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, DataTable
 from espn_client import EspnClient
 
+# CONSTANTS
+REFRESH_INTERVAL = 60  # seconds
+
 
 class TennisApp(App):
     """
@@ -46,7 +49,27 @@ class TennisApp(App):
         scoreTable = self.query_one("#scoreTable", DataTable)
         scoreTable.add_columns("Tournament", "Round", "Match")
 
-        # Fetch the data
+        # Run the first update immediately
+        await self.update_scores()
+        # Refresh scores every x seconds
+        self.set_interval(REFRESH_INTERVAL, self.update_scores)
+
+    async def update_scores(self) -> None:
+        """
+        Fetches fresh data and refreshes the score table.
+
+        Parameters:
+          None
+
+        Returns:
+          None
+        """
+        scoreTable = self.query_one("#scoreTable", DataTable)
+
+        # Clear old rows
+        scoreTable.clear()
+
+        # Fetch the fresh data
         wtaData = await self._espnClient.fetch_wta_scores()
         wtaEvents = wtaData.get("events", [])
 
@@ -60,9 +83,8 @@ class TennisApp(App):
 
             for group in groupings:
                 groupMeta = group.get("grouping", {})
-                groupName = groupMeta.get("slug", "")
 
-                if groupName == "womens-singles":
+                if groupMeta.get("slug") == "womens-singles":
                     # Competitions contain matches
                     competitions = group.get("competitions", [])
 
