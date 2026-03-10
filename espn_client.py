@@ -16,9 +16,9 @@ class EspnClient:
         self._atpUrlAddress = "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard"
         self._wtaUrlAddress = "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard"
 
-    async def fetch_atp_scores(self) -> Dict[str, Any]:
+    async def fetch_wta_scores(self) -> Dict[str, Any]:
         """
-        Fetches the current ATP scoreboard data from ESPN.
+        Fetches the current WTA scoreboard data from ESPN.
 
         Parameters:
           None
@@ -27,6 +27,6 @@ class EspnClient:
           Dict[str, Any] - The raw JSON response as a dictionary.
         """
         async with aiohttp.ClientSession() as networkSession:
-            async with networkSession.get(self._atpUrlAddress) as apiResponse:
+            async with networkSession.get(self._wtaUrlAddress) as apiResponse:
                 # Return the JSON body as a Python dictionary
                 return await apiResponse.json()

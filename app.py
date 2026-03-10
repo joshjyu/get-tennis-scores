@@ -1,5 +1,5 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static
+from textual.widgets import Header, Footer, DataTable
 from espn_client import EspnClient
 
 
@@ -29,8 +29,7 @@ class TennisApp(App):
           ComposeResult - The widgets to be displayed.
         """
         yield Header()
-        # Temporary score display
-        yield Static("Fetching scores...", id="scoreDisplay")
+        yield DataTable(id="scoreTable")
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -43,17 +42,25 @@ class TennisApp(App):
         Returns:
           None
         """
-        # Fetch the real data (data type = dict)
-        atpData = await self._espnClient.fetch_atp_scores()
+        # Add columns to table
+        scoreTable = self.query_one("#scoreTable", DataTable)
+        scoreTable.add_columns("Event", "Location")
 
-        # Extract events from data
-        # May return an empty list if API changes
-        atpEvents = atpData.get("events", [])
-        eventCount = len(atpEvents)
+        # Fetch the data (type = dict)
+        wtaData = await self._espnClient.fetch_wta_scores()
+        # Extract events from data. May return an empty list if API changes
+        wtaEvents = wtaData.get("events", [])
 
-        # Update the UI with a message
-        statusMessage = f"Connected! Found {eventCount} ATP events today."
-        self.query_one("#scoreDisplay", Static).update(statusMessage)
+        # Loop through events, add rows to the table
+        for event in wtaEvents:
+            # Get event name
+            eventName = event.get("shortName", "Unknown")
+
+            # Location name: event -> venue -> displayName
+            locationVenue = event.get("venue", {})
+            locationName = locationVenue.get("displayName", "Unknown")
+
+            scoreTable.add_row(eventName, locationName)
 
 
 if __name__ == "__main__":
