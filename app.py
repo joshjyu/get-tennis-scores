@@ -42,25 +42,48 @@ class TennisApp(App):
         Returns:
           None
         """
-        # Add columns to table
+        # Set up table columns
         scoreTable = self.query_one("#scoreTable", DataTable)
-        scoreTable.add_columns("Event", "Location")
+        scoreTable.add_columns("Tournament", "Round", "Match")
 
-        # Fetch the data (type = dict)
+        # Fetch the data
         wtaData = await self._espnClient.fetch_wta_scores()
-        # Extract events from data. May return an empty list if API changes
         wtaEvents = wtaData.get("events", [])
 
-        # Loop through events, add rows to the table
+        # Loop through events to extract data
+        # events -> groupings -> competitions -> matches
         for event in wtaEvents:
-            # Get event name
-            eventName = event.get("shortName", "Unknown")
+            tournamentName = event.get("name", "Unknown Tournament")
+            # Groupings usually separate events (ie Women's singles,
+            # Women's doubles, Mixed doubles, etc)
+            groupings = event.get("groupings", [])
 
-            # Location name: event -> venue -> displayName
-            locationVenue = event.get("venue", {})
-            locationName = locationVenue.get("displayName", "Unknown")
+            for group in groupings:
+                groupMeta = group.get("grouping", {})
+                groupName = groupMeta.get("slug", "")
 
-            scoreTable.add_row(eventName, locationName)
+                if groupName == "womens-singles":
+                    # Competitions contain matches
+                    competitions = group.get("competitions", [])
+
+                    for match in competitions:
+                        # Get match round
+                        roundDisplay = match.get("round", {}).get(
+                            "displayName", "N/A"
+                        )
+
+                        # Get competitor and score info
+                        matchNotes = match.get("notes", [])
+                        matchResult = (
+                            matchNotes[0].get("text", "Error")
+                            if len(matchNotes) > 0
+                            else "TBD"
+                        )
+
+                        # Add info in a row to score table
+                        scoreTable.add_row(
+                            tournamentName, roundDisplay, matchResult
+                        )
 
 
 if __name__ == "__main__":
