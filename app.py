@@ -93,14 +93,30 @@ class TennisApp(App):
                         roundDisplay = match.get("round", {}).get(
                             "displayName", "N/A"
                         )
+                        # Get status (in progress, final, etc)
+                        statusDesc = (
+                            match.get("status", {})
+                            .get("type", {})
+                            .get("description", "")
+                        )
 
                         # Get competitor and score info
                         matchNotes = match.get("notes", [])
                         matchResult = (
-                            matchNotes[0].get("text", "Error")
-                            if len(matchNotes) > 0
+                            matchNotes[0].get("text", "TBD")
+                            if matchNotes
                             else "TBD"
                         )
+
+                        # Clean up match details string if in progress
+                        if statusDesc == "In Progress":
+                            matchResult = matchResult.replace(
+                                " is tied with ", " vs "
+                            )
+                            matchResult = matchResult.replace(" leads ", " vs ")
+                            matchResult = matchResult.replace(
+                                " trails ", " vs "
+                            )
 
                         # Add info in a row to score table
                         scoreTable.add_row(
