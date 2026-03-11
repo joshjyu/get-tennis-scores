@@ -1,6 +1,6 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Collapsible, Static
-from textual.containers import VerticalScroll
+from textual.containers import VerticalScroll, Vertical
 from espn_client import EspnClient
 from typing import Any, Dict
 
@@ -160,28 +160,39 @@ class TennisApp(App):
             if isinstance(child, Collapsible) and child.id == f"event_{eventId}":
                 return child
 
-        # If not found, create new collapsed one
+        # Create a dedicated container to hold the dynamically loaded matches
+        matchContainer = Vertical(id=f"matches_{eventId}")
+
+        # Pass the container into Collapsible
         newCollapsible = Collapsible(
-            title=title, id=f"event_{eventId}", collapsed=True
+            matchContainer, title=title, id=f"event_{eventId}", collapsed=True
         )
         await container.mount(newCollapsible)
         return newCollapsible
 
     async def _update_match_in_tournament(
-        self, tournamentNode: Collapsible, matchId: str, matchData: Dict[str, Any]
+        self,
+        tournamentNode: Collapsible,
+        eventId: str,
+        matchId: str,
+        matchData: Dict[str, Any],
     ) -> None:
         """
         Finds a MatchCard to update or creates a new one inside the tournament.
         """
+        # Locate the internal Vertical container
+        matchContainer = tournamentNode.query_one(f"#matches_{eventId}", Vertical)
+
         # Search children of the Collapsible
-        for child in tournamentNode.children:
+        for child in matchContainer.children:
             if isinstance(child, MatchCard) and child.id == f"match_{matchId}":
                 # Patch the existing card
                 child.update_data(matchData)
                 return
+
         # If not found, mount a new card
         newCard = MatchCard(matchData, id=f"match_{matchId}")
-        await tournamentNode.mount(newCard)
+        await matchContainer.mount(newCard)
 
     async def update_scores(self) -> None:
         """
@@ -230,7 +241,7 @@ class TennisApp(App):
 
                         # Update or create the Match Card (incremental)
                         await self._update_match_in_tournament(
-                            tournamentNode, matchId, match
+                            tournamentNode, eventId, matchId, match
                         )
 
 
