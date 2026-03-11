@@ -29,6 +29,30 @@ class MatchCard(Static):
         self._matchData = matchData
         self._scoreText = self._format_match()
 
+    def _to_superscript(self, text: str) -> str:
+        """
+        Converts a string of digits to unicode superscripts.
+
+        Parameters:
+          text - The string of digits to convert.
+
+        Returns:
+          str - The string converted to superscripts.
+        """
+        superscripts = {
+            "0": "\u2070",
+            "1": "\u00b9",
+            "2": "\u00b2",
+            "3": "\u00b3",
+            "4": "\u2074",
+            "5": "\u2075",
+            "6": "\u2076",
+            "7": "\u2077",
+            "8": "\u2078",
+            "9": "\u2079",
+        }
+        return "".join(superscripts.get(char, char) for char in text)
+
     def update_data(self, newMatchData: Dict[str, Any]) -> None:
         """
         Updates the internal data and refreshes the display if needed.
@@ -69,15 +93,27 @@ class MatchCard(Static):
             scores = []
             for scoreDict in comp.get("linescores", []):
                 rawValue = scoreDict.get("value", "")
+                tiebreakValue = scoreDict.get("tiebreak")
 
                 # Convert score to int (default is float), then to str
                 try:
                     intValue = int(float(rawValue))
-                    scores.append(str(intValue))
-                except (ValueError, TypeError):
-                    scores.append("-")
+                    scoreStr = str(intValue)
 
-            scoreString = "  ".join(scores)
+                    # Append tiebreak score if player has 6 games
+                    # This accounts for a tiebreak loser or in-progress
+                    if intValue == 6 and tiebreakValue is not None:
+                        tiebreakInt = int(float(tiebreakValue))
+                        superStr = self._to_superscript(str(tiebreakInt))
+                        scoreStr += superStr
+
+                    # Pad string to 3 characters for vertical alignment
+                    scores.append(f"{scoreStr:<3}")
+
+                except (ValueError, TypeError):
+                    scores.append("-  ")
+
+            scoreString = "".join(scores)
 
             # Join the player name with player's set score
             lines.append(f"{name:{NAME_WIDTH}} {scoreString}")
@@ -235,7 +271,7 @@ class TennisApp(App):
                 if groupMeta.get("slug") == "womens-singles":
                     competitions = group.get("competitions", [])
 
-                    for match in competitions:
+                    for match in reversed(competitions):
                         # Get match ID
                         matchId = match.get("id", "UnknownMatchID")
 
