@@ -1,6 +1,8 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Tree
+from textual.widgets.tree import TreeNode
 from espn_client import EspnClient
+from typing import Any, Dict, List, Optional
 
 # CONSTANTS
 REFRESH_INTERVAL = 60  # seconds
@@ -52,9 +54,35 @@ class TennisApp(App):
         # Refresh scores every x seconds
         self.set_interval(REFRESH_INTERVAL, self.update_scores)
 
+    def _find_or_add_node(
+        self, parentNode: TreeNode, nodeID: str, label: str, expand: bool = False
+    ) -> TreeNode:
+        """
+        Finds an existing node by its ID or adds a new one if it doesn't exist.
+
+        Parameters:
+          parentNode - The node to search within.
+          nodeID - The unique ID from ESPN.
+          label - The display text for the node.
+          expand - Whether the node should be expanded if newly created.
+
+        Returns:
+          TreeNode - The found or newly created node.
+        """
+        # Search existing children for this ID
+        for child in parentNode.children:
+            if child.data == nodeID:
+                # Update label if it changed (eg score change)
+                if str(child.label) != label:
+                    child.label = label
+                return child
+
+        # If not found, add it
+        return parentNode.add(label, data=nodeID, expand=expand)
+
     async def update_scores(self) -> None:
         """
-        Fetches fresh data and refreshes the score tree.
+        Fetches fresh data and incrementally updates the score tree.
 
         Parameters:
           None
@@ -63,8 +91,6 @@ class TennisApp(App):
           None
         """
         scoreTree = self.query_one("#scoreTree", Tree)
-        # Clear old branches
-        scoreTree.root.remove_children()
 
         # Fetch the fresh data
         wtaData = await self._espnClient.fetch_wta_scores()
@@ -75,6 +101,7 @@ class TennisApp(App):
         # Groupings usually separate events (ie Women's singles vs doubles, etc)
         # Competitions contain matches
         for event in wtaEvents:
+            eventID = event.get("id", "UnknownID")
             tournamentName = event.get("name", "Unknown Tournament")
             locationVenue = event.get("venue", {}).get(
                 "displayName", "Unknown Location"
@@ -83,14 +110,21 @@ class TennisApp(App):
             # Create tournament branch
             tournamentLabel = f"{tournamentName} ({locationVenue})"
             # Start collapsed
-            tournamentNode = scoreTree.root.add(tournamentLabel, expand=False)
+            tournamentNode = self._find_or_add_node(
+                scoreTree.root, eventID, tournamentLabel, expand=False
+            )
 
             groupings = event.get("groupings", [])
             for group in groupings:
                 groupMeta = group.get("grouping", {})
+
+                # Women's singles data
                 if groupMeta.get("slug") == "womens-singles":
                     competitions = group.get("competitions", [])
+
                     for match in competitions:
+                        # Get match ID
+                        matchID = match.get("id", "UnknownMatchID")
                         # Get match round
                         roundDisplay = match.get("round", {}).get(
                             "displayName", "N/A"
@@ -116,7 +150,7 @@ class TennisApp(App):
 
                         # Add match as a leaf to the tournament node
                         matchLabel = f"{roundDisplay}: {matchResult}"
-                        tournamentNode.add_leaf(matchLabel)
+                        self._find_or_add_node(tournamentNode, matchID, matchLabel)
 
 
 if __name__ == "__main__":
