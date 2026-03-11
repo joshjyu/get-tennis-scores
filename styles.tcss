@@ -5,3 +5,7 @@ MatchCard {
   margin: 1 0;
   height: auto;
 }
+
+.match-container {
+  height: auto;
+}

@@ -161,7 +161,7 @@ class TennisApp(App):
                 return child
 
         # Create a dedicated container to hold the dynamically loaded matches
-        matchContainer = Vertical(id=f"matches_{eventId}")
+        matchContainer = Vertical(id=f"matches_{eventId}", classes="match-container")
 
         # Pass the container into Collapsible
         newCollapsible = Collapsible(
