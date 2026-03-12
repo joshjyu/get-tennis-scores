@@ -2,7 +2,7 @@ from textual import events
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Collapsible, Static
 from textual.containers import VerticalScroll
-from espn_client import EspnClient
+from espn_client import EspnClient, EspnApiError
 from typing import Any, Dict
 
 # CONSTANTS
@@ -455,6 +455,7 @@ class TennisApp(App):
     async def update_scores(self) -> None:
         """
         Fetches fresh data and incrementally updates the UI.
+        Surfaces network errors when appropriate.
 
         Parameters:
           None
@@ -462,13 +463,22 @@ class TennisApp(App):
         Returns:
           None
         """
-        # Fetch and process WTA data
-        wtaData = await self._espnClient.fetch_wta_scores()
-        await self._process_tour_data("wtaContainer", wtaData)
+        try:
+            # Fetch and process WTA data
+            wtaData = await self._espnClient.fetch_wta_scores()
+            await self._process_tour_data("wtaContainer", wtaData)
 
-        # Fetch and process ATP data
-        atpData = await self._espnClient.fetch_atp_scores()
-        await self._process_tour_data("atpContainer", atpData)
+            # Fetch and process ATP data
+            atpData = await self._espnClient.fetch_atp_scores()
+            await self._process_tour_data("atpContainer", atpData)
+
+        except EspnApiError as e:
+            self.notify(
+                f"Data fetch failed: {e}",
+                title="Connection Error",
+                severity="error",
+                timeout=10.0,
+            )
 
     def on_resize(self, event: events.Resize) -> None:
         """

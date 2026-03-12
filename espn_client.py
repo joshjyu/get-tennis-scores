@@ -2,6 +2,14 @@ import aiohttp
 from typing import Any, Dict, Optional
 
 
+class EspnApiError(Exception):
+    """
+    Exception raised for ESPN API connection or HTTP errors.
+    """
+
+    pass
+
+
 class EspnClient:
     """
     Class that represents the client for interacting with the ESPN hidden
@@ -57,11 +65,10 @@ class EspnClient:
                 # Check for good response
                 if apiResponse.status == 200:
                     return await apiResponse.json()
-                # Otherwise return empty events
-                return {"events": []}
-        except Exception:
-            # Silence error and return empty events
-            return {"events": []}
+                # Otherwise raise error
+                raise EspnApiError(f"HTTP {apiResponse.status}")
+        except Exception as e:
+            raise EspnApiError(f"Network error: {str(e)}")
 
     async def fetch_atp_scores(self) -> Dict[str, Any]:
         """
@@ -79,8 +86,7 @@ class EspnClient:
                 # Check for good response
                 if apiResponse.status == 200:
                     return await apiResponse.json()
-                # Otherwise return empty events
-                return {"events": []}
-        except Exception:
-            # Silence error and return empty events
-            return {"events": []}
+                # Otherwise raise error
+                raise EspnApiError(f"HTTP {apiResponse.status}")
+        except Exception as e:
+            raise EspnApiError(f"Network error: {str(e)}")
