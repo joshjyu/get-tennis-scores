@@ -1,6 +1,6 @@
 /* styles.tcss */
 MatchCard {
-  border: solid teal;
+  border: solid $primary;
   padding: 0 1;
   margin: 0;
   width: 1fr;

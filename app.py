@@ -425,7 +425,7 @@ class TennisApp(App):
           tournamentNode - The Collapsible representing the tournament.
           eventId - The unique ID for the tournament event.
           event - The raw event dictionary from the ESPN API.
-          tourName - The name of the tour to filter matches
+          tourPrefix - The prefix for the event (mens vs womens).
 
         Returns:
           None
