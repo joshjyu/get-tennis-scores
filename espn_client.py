@@ -49,6 +49,19 @@ class EspnClient:
             self._session = aiohttp.ClientSession()
         return self._session
 
+    async def close_session(self) -> None:
+        """
+        Closes the active asynchronous HTTP session.
+
+        Parameters:
+          None
+
+        Returns:
+          None
+        """
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+
     async def fetch_wta_scores(self) -> Dict[str, Any]:
         """
         Fetches the current WTA scoreboard data from ESPN.

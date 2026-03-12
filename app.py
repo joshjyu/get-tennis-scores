@@ -244,6 +244,19 @@ class TennisApp(App):
         # Refresh scores every x seconds
         self.set_interval(REFRESH_INTERVAL, self.update_scores)
 
+    async def on_unmount(self) -> None:
+        """
+        Event handler called when the app is unmounted.
+        Closes the active network session.
+
+        Parameters:
+          None
+
+        Returns:
+          None
+        """
+        await self._espnClient.close_session()
+
     async def _find_or_create_tournament(
         self, container: Static, eventId: str, title: str
     ) -> Collapsible:
@@ -477,7 +490,7 @@ class TennisApp(App):
                 f"Data fetch failed: {e}",
                 title="Connection Error",
                 severity="error",
-                timeout=10.0,
+                timeout=10.0,  # seconds
             )
 
     def on_resize(self, event: events.Resize) -> None:
