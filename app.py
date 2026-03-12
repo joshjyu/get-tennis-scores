@@ -7,8 +7,8 @@ from typing import Any, Dict
 # CONSTANTS
 REFRESH_INTERVAL = 30  # seconds
 NAME_WIDTH = 45  # character width for player names
-SERVER_SYMBOL = " * "
-WINNER_SYMBOL = "\u2714"
+SERVER_SYMBOL = " * "  # Symbol to indicate player serving
+WINNER_SYMBOL = "\u2714"  # Character to indicate winner of match
 
 
 class MatchCard(Static):
@@ -30,6 +30,20 @@ class MatchCard(Static):
         self._matchData = matchData
         self._scoreText = self._format_match()
         super().__init__(self._scoreText, **kwargs)
+        self._set_dynamic_height()
+
+    def _set_dynamic_height(self) -> None:
+        """
+        Calculates the required height based on line count and updates the styles.
+
+        Parameters:
+          None
+
+        Returns:
+          None
+        """
+        lineCount = len(self._scoreText.split("\n"))
+        self.styles.height = lineCount + 2
 
     def _to_superscript(self, text: str) -> str:
         """
@@ -70,6 +84,7 @@ class MatchCard(Static):
         if self._scoreText != newText:
             self._scoreText = newText
             self.update(self._scoreText)
+            self._set_dynamic_height()
 
     def _format_match(self) -> str:
         """
