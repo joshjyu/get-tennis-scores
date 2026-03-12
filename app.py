@@ -1,3 +1,4 @@
+from textual import events
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Collapsible, Static
 from textual.containers import VerticalScroll
@@ -9,6 +10,7 @@ REFRESH_INTERVAL = 30  # seconds
 NAME_WIDTH = 45  # character width for player names
 SERVER_SYMBOL = " * "  # Symbol to indicate player serving
 WINNER_SYMBOL = "\u2714"  # Character to indicate winner of match
+CARD_WIDTH = 77  # Match card minimum width
 
 
 class MatchCard(Static):
@@ -243,6 +245,11 @@ class TennisApp(App):
         # Create a dedicated container to hold the dynamically loaded matches
         matchContainer = Static(id=f"matches_{eventId}", classes="match-container")
 
+        # Apply current responsive grid dimensions upon initialization
+        columns = max(1, self.size.width // CARD_WIDTH)
+        matchContainer.styles.grid_size_columns = columns
+        matchContainer.styles.grid_columns = "1fr " * columns
+
         # Pass the container into Collapsible
         newCollapsible = Collapsible(
             matchContainer, title=title, id=f"event_{eventId}", collapsed=True
@@ -332,6 +339,25 @@ class TennisApp(App):
                         await self._update_match_in_tournament(
                             tournamentNode, eventId, matchId, match
                         )
+
+    def on_resize(self, event: events.Resize) -> None:
+        """
+        Dynamically adjusts grid columns based on terminal width to simulate flexbox wrapping.
+
+        Parameters:
+          event - The resize event containing the new terminal dimensions.
+
+        Returns:
+          None
+        """
+        # Calculate max columns
+        # (eg 65 min-width + 2 gutter = 67 required space per column)
+        columns = max(1, event.size.width // CARD_WIDTH)
+
+        # Apply structural changes to all existing tournament containers
+        for container in self.query(".match-container"):
+            container.styles.grid_size_columns = columns
+            container.styles.grid_columns = "1fr " * columns
 
 
 if __name__ == "__main__":

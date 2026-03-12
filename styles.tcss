@@ -3,13 +3,12 @@ MatchCard {
   border: solid teal;
   padding: 0 1;
   margin: 0;
-  width: 100%;
+  width: 1fr;
+  min-width: 65;
 }
 
 .match-container {
   layout: grid;
-  grid-size: 2;
-  grid-columns: 1fr 1fr;
   grid-rows: auto;
   grid-gutter: 1 2;
   height: auto;
