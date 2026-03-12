@@ -1,6 +1,6 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Collapsible, Static
-from textual.containers import VerticalScroll, Vertical
+from textual.containers import VerticalScroll
 from espn_client import EspnClient
 from typing import Any, Dict
 
@@ -27,9 +27,9 @@ class MatchCard(Static):
         Returns:
           None
         """
-        super().__init__(**kwargs)
         self._matchData = matchData
         self._scoreText = self._format_match()
+        super().__init__(self._scoreText, **kwargs)
 
     def _to_superscript(self, text: str) -> str:
         """
@@ -153,18 +153,6 @@ class MatchCard(Static):
 
         return "\n".join(lines)  # Add lines on top of each other
 
-    def render(self) -> str:
-        """
-        Renders the widget's content
-
-        Parameters:
-          None
-
-        Returns:
-          str - The text to be displayed by the static widget.
-        """
-        return self._scoreText
-
 
 class TennisApp(App):
     """
@@ -230,7 +218,7 @@ class TennisApp(App):
                 return child
 
         # Create a dedicated container to hold the dynamically loaded matches
-        matchContainer = Vertical(id=f"matches_{eventId}", classes="match-container")
+        matchContainer = Static(id=f"matches_{eventId}", classes="match-container")
 
         # Pass the container into Collapsible
         newCollapsible = Collapsible(
@@ -250,7 +238,7 @@ class TennisApp(App):
         Finds a MatchCard to update or creates a new one inside the tournament.
         """
         # Locate the internal Vertical container
-        matchContainer = tournamentNode.query_one(f"#matches_{eventId}", Vertical)
+        matchContainer = tournamentNode.query_one(f"#matches_{eventId}", Static)
 
         # Search children of the Collapsible
         for child in matchContainer.children:
