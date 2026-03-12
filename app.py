@@ -5,8 +5,10 @@ from espn_client import EspnClient
 from typing import Any, Dict
 
 # CONSTANTS
-REFRESH_INTERVAL = 60  # seconds
+REFRESH_INTERVAL = 30  # seconds
 NAME_WIDTH = 45  # character width for player names
+SERVER_SYMBOL = " * "
+WINNER_SYMBOL = "\u2714"
 
 
 class MatchCard(Static):
@@ -79,15 +81,30 @@ class MatchCard(Static):
         Returns:
           str - The formatted string representing the match box.
         """
+        # Get round
         roundName = self._matchData.get("round", {}).get("displayName", "N/A")
+        # Get match status
+        matchStatus = (
+            self._matchData.get("status", {}).get("type", {}).get("description", "")
+        )
+        # Get player info
         competitors = self._matchData.get("competitors", [])
 
         # Start the match box with the name of the round
-        lines = [f"{roundName}"]
+        formattedRound = f"   {roundName}"
+        # Pad the round name and add the match status
+        lines = [f"{formattedRound:{NAME_WIDTH}} {matchStatus}"]
 
         for comp in competitors:
             # Get player name
             name = comp.get("athlete", {}).get("displayName", "TBD")
+            # Check if serving
+            isServer = comp.get("possession", False)
+
+            if isServer:
+                name = SERVER_SYMBOL + name
+            else:
+                name = "   " + name
 
             # Get set scores
             scores = []
@@ -114,6 +131,22 @@ class MatchCard(Static):
                     scores.append("-  ")
 
             scoreString = "".join(scores)
+
+            # Check if match is completed
+            isCompleted = (
+                self._matchData.get("status", {})
+                .get("type", {})
+                .get("completed", False)
+            )
+
+            if isCompleted:
+                # Check if this player is the winner
+                isWinner = comp.get("winner", False)
+                if isWinner:
+                    # Append a winner's symbol if player is the winner
+                    scoreString += " " + WINNER_SYMBOL
+                else:
+                    scoreString += "  "
 
             # Join the player name with player's set score
             lines.append(f"{name:{NAME_WIDTH}} {scoreString}")
