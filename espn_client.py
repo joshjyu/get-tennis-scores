@@ -1,5 +1,5 @@
 import aiohttp
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class EspnClient:
@@ -11,10 +11,35 @@ class EspnClient:
     def __init__(self) -> None:
         """
         Initializes the ESPN client.
+
+        Parameters:
+          None
+
+        Returns:
+          None
         """
         # Define both ATP & WTA endpoints
-        self._atpUrlAddress = "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard"
-        self._wtaUrlAddress = "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard"
+        self._atpUrlAddress = (
+            "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard"
+        )
+        self._wtaUrlAddress = (
+            "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard"
+        )
+        self._session: Optional[aiohttp.ClientSession] = None
+
+    async def get_session(self) -> aiohttp.ClientSession:
+        """
+        Retrives the active network session, or creates one if it does not exist.
+
+        Parameters:
+          None
+
+        Returns:
+          aiohttp.ClientSession - The active asynchronous HTTP session.
+        """
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
 
     async def fetch_wta_scores(self) -> Dict[str, Any]:
         """
@@ -26,7 +51,6 @@ class EspnClient:
         Returns:
           Dict[str, Any] - The raw JSON response as a dictionary.
         """
-        async with aiohttp.ClientSession() as networkSession:
-            async with networkSession.get(self._wtaUrlAddress) as apiResponse:
-                # Return the JSON body as a Python dictionary
-                return await apiResponse.json()
+        session = await self.get_session()
+        async with session.get(self._wtaUrlAddress) as apiResponse:
+            return await apiResponse.json()

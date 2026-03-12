@@ -227,6 +227,14 @@ class TennisApp(App):
     ) -> Collapsible:
         """
         Finds an existing Collapsible or creates a new one.
+
+        Parameters:
+          container - The VerticalScroll container that holds the tournament widgets.
+          eventId - The unique identifier string for the tournament event.
+          title - The display string for the tournament Collapsible label.
+
+        Returns:
+          Collapsible - The existing or newly instantiated tournament widget.
         """
         for child in container.children:
             if isinstance(child, Collapsible) and child.id == f"event_{eventId}":
@@ -251,6 +259,15 @@ class TennisApp(App):
     ) -> None:
         """
         Finds a MatchCard to update or creates a new one inside the tournament.
+
+        Parameters:
+          tournamentNode - The Collapsible widget representing the tournament.
+          eventId - The unique identifier string for the tournament event.
+          matchId - The unique identifier string for the specific match.
+          matchData - Dictionary containing the latest match information from the API.
+
+        Returns:
+          None
         """
         # Locate the internal Vertical container
         matchContainer = tournamentNode.query_one(f"#matches_{eventId}", Static)
