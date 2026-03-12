@@ -7,10 +7,10 @@ from typing import Any, Dict
 
 # CONSTANTS
 REFRESH_INTERVAL = 30  # seconds
+CARD_WIDTH = 67  # Match card minimum width
 NAME_WIDTH = 40  # character width for player names
 SERVER_SYMBOL = " * "  # Symbol to indicate player serving
 WINNER_SYMBOL = "\u2714"  # Character to indicate winner of match
-CARD_WIDTH = 67  # Match card minimum width
 
 
 class MatchCard(Static):
@@ -98,8 +98,6 @@ class MatchCard(Static):
         Returns:
           str - The formatted string representing the match box.
         """
-        # Get round
-        roundName = self._matchData.get("round", {}).get("displayName", "N/A")
         # Get match status
         matchStatus = (
             self._matchData.get("status", {}).get("type", {}).get("description", "")
@@ -107,10 +105,13 @@ class MatchCard(Static):
         # Get player info
         competitors = self._matchData.get("competitors", [])
 
-        # Start the match box with the name of the round
-        formattedRound = f"   {roundName}"
-        # Pad the round name and add the match status
-        lines = [f"{formattedRound:{NAME_WIDTH}} {matchStatus}"]
+        # Only display the round name for Scheduled matches
+        roundLabel = ""
+        if matchStatus == "Scheduled":
+            roundLabel = self._matchData.get("round", {}).get("displayName", "N/A")
+
+        # Add the match status (and round name if applicable)
+        lines = [f"{'':8}{roundLabel:<{NAME_WIDTH-8}} {matchStatus}"]
 
         for comp in competitors:
             # Get player name and seed and prepend seed to player's name
@@ -255,18 +256,13 @@ class TennisApp(App):
             if isinstance(child, Collapsible) and child.id == f"event_{eventId}":
                 return child
 
-        # Create containers for matches
-        activeMatchContainer = Static(
-            id=f"active_matches_{eventId}", classes="match-container"
-        )
+        # Create containers for future matches
         scheduledMatchContainer = Static(
             id=f"scheduled_matches_{eventId}", classes="match-container"
         )
 
         # Apply current responsive grid dimensions upon initialization
         columns = max(1, self.size.width // CARD_WIDTH)
-        activeMatchContainer.styles.grid_size_columns = columns
-        activeMatchContainer.styles.grid_columns = "1fr " * columns
         scheduledMatchContainer.styles.grid_size_columns = columns
         scheduledMatchContainer.styles.grid_columns = "1fr " * columns
 
@@ -281,7 +277,6 @@ class TennisApp(App):
         # Pass the match containers into the main tournament Collapsible
         newCollapsible = Collapsible(
             scheduledCollapsible,
-            activeMatchContainer,
             title=title,
             id=f"event_{eventId}",
             collapsed=True,
@@ -316,7 +311,7 @@ class TennisApp(App):
                 card.update_data(matchData)
                 return
 
-        # If it's a new card, figure out its status to determine its container
+        # If it's a new card, get its status to determine its container
         matchStatus = (
             matchData.get("status", {}).get("type", {}).get("description", "")
         )
@@ -327,14 +322,50 @@ class TennisApp(App):
                 f"#scheduled_matches_{eventId}", Static
             )
         else:
-            # Target the active/completed matches container
-            targetContainer = tournamentNode.query_one(
-                f"#active_matches_{eventId}", Static
+            # Group active/completed matches by round
+            roundName = matchData.get("round", {}).get(
+                "displayName", "Unknown Round"
             )
 
-        # Mount the new card
+            # Dynamically create round ID
+            roundId = roundName.replace(" ", "_").lower()
+            roundContainerId = f"#round_matches_{eventId}_{roundId}"
 
-        # If not found, mount a new card
+            # Check if this round's container already exists
+            existingRound = list(tournamentNode.query(roundContainerId))
+
+            if existingRound:
+                # The round exists, use it
+                targetContainer = existingRound[0]
+            else:
+                # Round doesn't exist, create it
+                targetContainer = Static(
+                    id=f"round_matches_{eventId}_{roundId}",
+                    classes="match-container",
+                )
+                columns = max(1, self.size.width // CARD_WIDTH)
+                targetContainer.styles.grid_size_columns = columns
+                targetContainer.styles.grid_columns = "1fr " * columns
+
+                # Check if we have created any rounds yet
+                existingRounds = list(tournamentNode.query(".round-collapsible"))
+                isFirstRound = len(existingRounds) == 0
+
+                # Wrap new round in a Collapsible
+                # If it's the first round we create, leave it expanded
+                newRoundCollapsible = Collapsible(
+                    targetContainer,
+                    title=roundName,
+                    id=f"round_col_{eventId}_{roundId}",
+                    classes="round-collapsible",
+                    collapsed=not isFirstRound,
+                )
+
+                # Mount it to the main tournament node
+                tournamentContents = tournamentNode.query_one("Contents")
+                await tournamentContents.mount(newRoundCollapsible)
+
+        # Mount new card into chosen targetContainer
         newCard = MatchCard(matchData, id=f"match_{matchId}")
         await targetContainer.mount(newCard)
 
