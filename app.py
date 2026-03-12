@@ -7,10 +7,10 @@ from typing import Any, Dict
 
 # CONSTANTS
 REFRESH_INTERVAL = 30  # seconds
-NAME_WIDTH = 45  # character width for player names
+NAME_WIDTH = 40  # character width for player names
 SERVER_SYMBOL = " * "  # Symbol to indicate player serving
 WINNER_SYMBOL = "\u2714"  # Character to indicate winner of match
-CARD_WIDTH = 77  # Match card minimum width
+CARD_WIDTH = 67  # Match card minimum width
 
 
 class MatchCard(Static):
@@ -113,11 +113,18 @@ class MatchCard(Static):
         lines = [f"{formattedRound:{NAME_WIDTH}} {matchStatus}"]
 
         for comp in competitors:
-            # Get player name
-            name = comp.get("athlete", {}).get("displayName", "TBD")
+            # Get player name and seed and prepend seed to player's name
+            name = comp.get("athlete", {}).get("shortName", "TBD")
+            seed = comp.get("curatedRank", {}).get("current")
+            seedText = ""
+            # Check seed between 0 and 99 in case placeholder seed exists
+            if seed and str(seed).isdigit() and int(seed) > 0 and int(seed) < 99:
+                seedText = f"({seed})"
+            paddedSeed = f"{seedText:<5}"  # 5 characters wide, left-aligned
+            name = f"{paddedSeed}{name}"
+
             # Check if serving
             isServer = comp.get("possession", False)
-
             if isServer:
                 name = SERVER_SYMBOL + name
             else:
@@ -206,7 +213,13 @@ class TennisApp(App):
           ComposeResult - The widgets to be displayed.
         """
         yield Header()
-        yield VerticalScroll(id="tournamentContainer")
+        with VerticalScroll(id="tournamentContainer"):
+            # Top-level Collapsible for WTA
+            with Collapsible(
+                title="WTA Tournaments", id="wtaCollapsible", collapsed=False
+            ):
+                # Mount individual WTA tournament collapsibles inside wtaContainer
+                yield VerticalScroll(id="wtaContainer")
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -242,18 +255,38 @@ class TennisApp(App):
             if isinstance(child, Collapsible) and child.id == f"event_{eventId}":
                 return child
 
-        # Create a dedicated container to hold the dynamically loaded matches
-        matchContainer = Static(id=f"matches_{eventId}", classes="match-container")
+        # Create containers for matches
+        activeMatchContainer = Static(
+            id=f"active_matches_{eventId}", classes="match-container"
+        )
+        scheduledMatchContainer = Static(
+            id=f"scheduled_matches_{eventId}", classes="match-container"
+        )
 
         # Apply current responsive grid dimensions upon initialization
         columns = max(1, self.size.width // CARD_WIDTH)
-        matchContainer.styles.grid_size_columns = columns
-        matchContainer.styles.grid_columns = "1fr " * columns
+        activeMatchContainer.styles.grid_size_columns = columns
+        activeMatchContainer.styles.grid_columns = "1fr " * columns
+        scheduledMatchContainer.styles.grid_size_columns = columns
+        scheduledMatchContainer.styles.grid_columns = "1fr " * columns
 
-        # Pass the container into Collapsible
-        newCollapsible = Collapsible(
-            matchContainer, title=title, id=f"event_{eventId}", collapsed=True
+        # Wrap scheduled matches into a Collapsible
+        scheduledCollapsible = Collapsible(
+            scheduledMatchContainer,
+            title="Scheduled Matches",
+            id=f"scheduled_col_{eventId}",
+            collapsed=True,
         )
+
+        # Pass the match containers into the main tournament Collapsible
+        newCollapsible = Collapsible(
+            scheduledCollapsible,
+            activeMatchContainer,
+            title=title,
+            id=f"event_{eventId}",
+            collapsed=True,
+        )
+
         await container.mount(newCollapsible)
         return newCollapsible
 
@@ -276,19 +309,34 @@ class TennisApp(App):
         Returns:
           None
         """
-        # Locate the internal Vertical container
-        matchContainer = tournamentNode.query_one(f"#matches_{eventId}", Static)
-
-        # Search children of the Collapsible
-        for child in matchContainer.children:
-            if isinstance(child, MatchCard) and child.id == f"match_{matchId}":
+        # Check if the match card exists in this tournament
+        for card in tournamentNode.query(MatchCard):
+            if card.id == f"match_{matchId}":
                 # Patch the existing card
-                child.update_data(matchData)
+                card.update_data(matchData)
                 return
+
+        # If it's a new card, figure out its status to determine its container
+        matchStatus = (
+            matchData.get("status", {}).get("type", {}).get("description", "")
+        )
+
+        if matchStatus == "Scheduled":
+            # Target the scheduled matches container
+            targetContainer = tournamentNode.query_one(
+                f"#scheduled_matches_{eventId}", Static
+            )
+        else:
+            # Target the active/completed matches container
+            targetContainer = tournamentNode.query_one(
+                f"#active_matches_{eventId}", Static
+            )
+
+        # Mount the new card
 
         # If not found, mount a new card
         newCard = MatchCard(matchData, id=f"match_{matchId}")
-        await matchContainer.mount(newCard)
+        await targetContainer.mount(newCard)
 
     async def update_scores(self) -> None:
         """
@@ -300,7 +348,7 @@ class TennisApp(App):
         Returns:
           None
         """
-        container = self.query_one("#tournamentContainer", VerticalScroll)
+        wta_container = self.query_one("#wtaContainer", VerticalScroll)
 
         # Fetch the fresh data
         wtaData = await self._espnClient.fetch_wta_scores()
@@ -320,7 +368,7 @@ class TennisApp(App):
 
             # Get or Create the Tournament Block (incremental)
             tournamentNode = await self._find_or_create_tournament(
-                container, eventId, tournamentLabel
+                wta_container, eventId, tournamentLabel
             )
 
             groupings = event.get("groupings", [])
