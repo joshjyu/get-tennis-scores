@@ -51,6 +51,36 @@ class EspnClient:
         Returns:
           Dict[str, Any] - The raw JSON response as a dictionary.
         """
-        session = await self.get_session()
-        async with session.get(self._wtaUrlAddress) as apiResponse:
-            return await apiResponse.json()
+        try:
+            session = await self.get_session()
+            async with session.get(self._wtaUrlAddress) as apiResponse:
+                # Check for good response
+                if apiResponse.status == 200:
+                    return await apiResponse.json()
+                # Otherwise return empty events
+                return {"events": []}
+        except Exception:
+            # Silence error and return empty events
+            return {"events": []}
+
+    async def fetch_atp_scores(self) -> Dict[str, Any]:
+        """
+        Fetches the current ATP scoreboard data from ESPN.
+
+        Parameters:
+          None
+
+        Returns:
+          Dict[str, Any] - The raw JSON response as a dictionary.
+        """
+        try:
+            session = await self.get_session()
+            async with session.get(self._atpUrlAddress) as apiResponse:
+                # Check for good response
+                if apiResponse.status == 200:
+                    return await apiResponse.json()
+                # Otherwise return empty events
+                return {"events": []}
+        except Exception:
+            # Silence error and return empty events
+            return {"events": []}

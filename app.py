@@ -215,12 +215,18 @@ class TennisApp(App):
         """
         yield Header()
         with VerticalScroll(id="tournamentContainer"):
-            # Top-level Collapsible for WTA
+            # WTA section
             with Collapsible(
                 title="WTA Tournaments", id="wtaCollapsible", collapsed=False
             ):
                 # Mount individual WTA tournament collapsibles inside wtaContainer
-                yield VerticalScroll(id="wtaContainer")
+                yield Static(id="wtaContainer")
+            # ATP section
+            with Collapsible(
+                title="ATP Tournaments", id="atpCollapsible", collapsed=False
+            ):
+                # Mount ATP tournament collapsibles inside
+                yield Static(id="atpContainer")
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -239,13 +245,13 @@ class TennisApp(App):
         self.set_interval(REFRESH_INTERVAL, self.update_scores)
 
     async def _find_or_create_tournament(
-        self, container: VerticalScroll, eventId: str, title: str
+        self, container: Static, eventId: str, title: str
     ) -> Collapsible:
         """
         Finds an existing Collapsible or creates a new one.
 
         Parameters:
-          container - The VerticalScroll container that holds the tournament widgets.
+          container - The Static container that holds the tournament widgets.
           eventId - The unique identifier string for the tournament event.
           title - The display string for the tournament Collapsible label.
 
@@ -369,6 +375,83 @@ class TennisApp(App):
         newCard = MatchCard(matchData, id=f"match_{matchId}")
         await targetContainer.mount(newCard)
 
+    async def _process_tour_data(
+        self, containerId: str, tourData: Dict[str, Any]
+    ) -> None:
+        """
+        Processes tournament data for a specific tour (ATP, WTA) and updates the UI.
+
+        Parameters:
+          containerId - The ID of the Static container for the tour.
+          tourData - The raw dictionary data returned from the ESPN API.
+
+        Returns:
+          None
+        """
+        # Map internal container IDs to slug prefixes
+        tourMap = {"atpContainer": "mens", "wtaContainer": "womens"}
+        tourPrefix = tourMap.get(containerId, "unknown")
+
+        container = self.query_one(f"#{containerId}", Static)
+        events = tourData.get("events", [])
+
+        for event in events:
+            # Get event info
+            eventId = event.get("id", "UnknownId")
+            name = event.get("name", "Unknown Tournament")
+            venue = event.get("venue", {}).get("displayName", "Unknown")
+            label = f"{name} ({venue})"  # Tournament label
+
+            # Create or find the tournament node
+            tournamentNode = await self._find_or_create_tournament(
+                container, eventId, label
+            )
+            # Process the internal groupings
+            await self._process_event_groupings(
+                tournamentNode, eventId, event, tourPrefix
+            )
+
+    async def _process_event_groupings(
+        self,
+        tournamentNode: Collapsible,
+        eventId: str,
+        event: Dict[str, Any],
+        tourPrefix: str,
+    ) -> None:
+        """
+        Iterates through tournament groupings to update match cards.
+
+        Parameters:
+          tournamentNode - The Collapsible representing the tournament.
+          eventId - The unique ID for the tournament event.
+          event - The raw event dictionary from the ESPN API.
+          tourName - The name of the tour to filter matches
+
+        Returns:
+          None
+        """
+        # events -> groupings -> competitions -> matches
+        # Groupings usually separate events (ie Women's singles vs doubles, etc)
+        # Competitions contain matches
+
+        # Map tour name to specific slug
+        singlesTargetSlug = f"{tourPrefix}-singles"
+        groupings = event.get("groupings", [])
+
+        for group in groupings:
+            groupMeta = group.get("grouping", {})
+            slug = groupMeta.get("slug", "")
+
+            # Process matches that match the tour slug
+            if slug == singlesTargetSlug:
+                competitions = group.get("competitions", [])
+
+                for match in reversed(competitions):
+                    matchId = match.get("id", "UnknownMatchID")
+                    await self._update_match_in_tournament(
+                        tournamentNode, eventId, matchId, match
+                    )
+
     async def update_scores(self) -> None:
         """
         Fetches fresh data and incrementally updates the UI.
@@ -379,45 +462,13 @@ class TennisApp(App):
         Returns:
           None
         """
-        wta_container = self.query_one("#wtaContainer", VerticalScroll)
-
-        # Fetch the fresh data
+        # Fetch and process WTA data
         wtaData = await self._espnClient.fetch_wta_scores()
-        wtaEvents = wtaData.get("events", [])
+        await self._process_tour_data("wtaContainer", wtaData)
 
-        # Loop through events to extract data
-        # events -> groupings -> competitions -> matches
-        # Groupings usually separate events (ie Women's singles vs doubles, etc)
-        # Competitions contain matches
-        for event in wtaEvents:
-            eventId = event.get("id", "UnknownID")
-            tournamentName = event.get("name", "Unknown Tournament")
-            locationVenue = event.get("venue", {}).get(
-                "displayName", "Unknown Location"
-            )
-            tournamentLabel = f"{tournamentName} ({locationVenue})"
-
-            # Get or Create the Tournament Block (incremental)
-            tournamentNode = await self._find_or_create_tournament(
-                wta_container, eventId, tournamentLabel
-            )
-
-            groupings = event.get("groupings", [])
-            for group in groupings:
-                groupMeta = group.get("grouping", {})
-
-                # Women's singles data
-                if groupMeta.get("slug") == "womens-singles":
-                    competitions = group.get("competitions", [])
-
-                    for match in reversed(competitions):
-                        # Get match ID
-                        matchId = match.get("id", "UnknownMatchID")
-
-                        # Update or create the Match Card (incremental)
-                        await self._update_match_in_tournament(
-                            tournamentNode, eventId, matchId, match
-                        )
+        # Fetch and process ATP data
+        atpData = await self._espnClient.fetch_atp_scores()
+        await self._process_tour_data("atpContainer", atpData)
 
     def on_resize(self, event: events.Resize) -> None:
         """
@@ -430,7 +481,7 @@ class TennisApp(App):
           None
         """
         # Calculate max columns
-        # (eg 65 min-width + 2 gutter = 67 required space per column)
+        # for example, 65 min-width + 2 gutter = 67 required space per column
         columns = max(1, event.size.width // CARD_WIDTH)
 
         # Apply structural changes to all existing tournament containers
