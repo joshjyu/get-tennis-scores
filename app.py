@@ -278,7 +278,8 @@ class TennisApp(App):
         """
         if inputEvent.input.id == "refreshInput":
             # Validate input
-            if not inputEvent.validation_result.is_valid:
+            result = inputEvent.validation_result
+            if result is None or not result.is_valid:
                 self.notify(
                     f"Interval must be an integer of at least {MIN_REFRESH_INTERVAL} seconds.",
                     title="Invalid Input",
@@ -361,6 +362,8 @@ class TennisApp(App):
     ) -> None:
         """
         Finds a MatchCard to update or creates a new one inside the tournament.
+        If its required container has changed, removes the old card and remounts
+        it in the propert container.
 
         Parameters:
           tournamentNode - The Collapsible widget representing the tournament.
@@ -371,14 +374,7 @@ class TennisApp(App):
         Returns:
           None
         """
-        # Check if the match card exists in this tournament
-        for card in tournamentNode.query(MatchCard):
-            if card.id == f"match_{matchId}":
-                # Patch the existing card
-                card.update_data(matchData)
-                return
-
-        # If it's a new card, get its status to determine its container
+        # Determine the target container based on current match status
         matchStatus = matchData.status.type.description
 
         if matchStatus == "Scheduled":
@@ -427,6 +423,21 @@ class TennisApp(App):
                 # Mount it to the main tournament node
                 tournamentContents = tournamentNode.query_one("Contents")
                 await tournamentContents.mount(newRoundCollapsible)
+
+        # Check if the match card exists and evaluate its current container
+        existingCards = list(
+            tournamentNode.query(MatchCard).filter(f"#match_{matchId}")
+        )
+        if existingCards:
+            card = existingCards[0]
+            # If the card is already in the correct container, update it & return
+            if card.parent == targetContainer:
+                card.update_data(matchData)
+                return
+            else:
+                # The status changed (eg Scheduled -> In Progress)
+                # Remove the old widget so it can be remounted in new container
+                await card.remove()
 
         # Mount new card into chosen targetContainer
         newCard = MatchCard(matchData, id=f"match_{matchId}")

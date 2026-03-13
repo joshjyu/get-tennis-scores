@@ -1,5 +1,5 @@
 import aiohttp
-from typing import Any, Dict, Optional
+from typing import Optional
 from models import TourData
 from pydantic import ValidationError
 
@@ -64,7 +64,7 @@ class EspnClient:
         if self._session is not None and not self._session.closed:
             await self._session.close()
 
-    async def fetch_wta_scores(self) -> Dict[str, Any]:
+    async def fetch_wta_scores(self) -> TourData:
         """
         Fetches the current WTA scoreboard data from ESPN.
 
@@ -88,7 +88,7 @@ class EspnClient:
         except Exception as e:
             raise EspnApiError(f"Network error: {str(e)}")
 
-    async def fetch_atp_scores(self) -> Dict[str, Any]:
+    async def fetch_atp_scores(self) -> TourData:
         """
         Fetches the current ATP scoreboard data from ESPN.
 
