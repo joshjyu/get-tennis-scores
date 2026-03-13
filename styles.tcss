@@ -13,3 +13,23 @@ MatchCard {
   grid-gutter: 1 2;
   height: auto;
 }
+
+#settingsContainer {
+  layout: horizontal;
+  height: 3;
+  padding: 0 1;
+  margin-top: 1;
+  margin-bottom: 1;
+  align: right middle;
+}
+
+#refreshLabel {
+  height: 3;
+  content-align: center middle;
+  margin-right: 1;
+  text-style: bold;
+}
+
+#refreshInput {
+  width: 10;
+}

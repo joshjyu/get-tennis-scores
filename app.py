@@ -1,13 +1,15 @@
 from models import TourData, Match, Event
 from textual import events
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Collapsible, Static
-from textual.containers import VerticalScroll
+from textual.widgets import Header, Footer, Collapsible, Static, Input, Label
+from textual.containers import VerticalScroll, Horizontal
+from textual.validation import Integer
 from espn_client import EspnClient, EspnApiError
 from typing import Any
 
 # CONSTANTS
-REFRESH_INTERVAL = 30  # Seconds
+DEFAULT_REFRESH_INTERVAL = 30  # Seconds
+MIN_REFRESH_INTERVAL = 10  # Seconds
 CARD_WIDTH = 67  # Match card minimum width
 NAME_WIDTH = 40  # Character width for player names
 SERVER_SYMBOL = " * "  # Symbol to indicate player serving
@@ -175,9 +177,10 @@ class TennisApp(App):
 
     # Map keys to actions
     BINDINGS = [("q", "quit", "Quit")]
-
     # Link to CSS file
     CSS_PATH = "styles.tcss"
+    # Disable automatic focusing on startup
+    AUTO_FOCUS = None
 
     def __init__(self) -> None:
         """
@@ -191,6 +194,8 @@ class TennisApp(App):
         """
         super().__init__()
         self._espnClient = EspnClient()
+        self._refresh_interval = DEFAULT_REFRESH_INTERVAL
+        self._update_timer = None
 
     def compose(self) -> ComposeResult:
         """
@@ -203,6 +208,18 @@ class TennisApp(App):
           ComposeResult - The widgets to be displayed.
         """
         yield Header()
+
+        # Settings row
+        with Horizontal(id="settingsContainer"):
+            yield Label("Refresh Interval (seconds):", id="refreshLabel")
+            yield Input(
+                value=str(self._refresh_interval),
+                type="integer",
+                validators=[Integer(minimum=MIN_REFRESH_INTERVAL)],
+                id="refreshInput",
+            )
+
+        # Main container
         with VerticalScroll(id="tournamentContainer"):
             # ATP section
             with Collapsible(
@@ -216,6 +233,7 @@ class TennisApp(App):
             ):
                 # Mount individual WTA tournament collapsibles inside wtaContainer
                 yield Static(id="wtaContainer")
+
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -230,8 +248,10 @@ class TennisApp(App):
         """
         # First run
         await self.update_scores()
-        # Refresh scores every x seconds
-        self.set_interval(REFRESH_INTERVAL, self.update_scores)
+        # Reference to the refresh interval timer
+        self._update_timer = self.set_interval(
+            self._refresh_interval, self.update_scores
+        )
 
     async def on_unmount(self) -> None:
         """
@@ -245,6 +265,45 @@ class TennisApp(App):
           None
         """
         await self._espnClient.close_session()
+
+    def on_input_submitted(self, inputEvent: Input.Submitted) -> None:
+        """
+        Handles the event when the user presses Enter in the Input widget.
+
+        Parameters:
+          inputEvent - The interger data the user submits in the Input widget.
+
+        Returns:
+          None
+        """
+        if inputEvent.input.id == "refreshInput":
+            # Validate input
+            if not inputEvent.validation_result.is_valid:
+                self.notify(
+                    f"Interval must be an integer of at least {MIN_REFRESH_INTERVAL} seconds.",
+                    title="Invalid Input",
+                    severity="error",
+                )
+                # Revert to previous valid value if input invalid
+                inputEvent.input.value = str(self._refresh_interval)
+                return
+
+            new_interval = int(inputEvent.value)
+
+            if new_interval != self._refresh_interval:
+                self._refresh_interval = new_interval
+
+                # Stop existing timer and create a new one with updated interval
+                if self._update_timer is not None:
+                    self._update_timer.stop()
+                self._update_timer = self.set_interval(
+                    self._refresh_interval, self.update_scores
+                )
+
+                self.notify(
+                    f"Refresh interval updated to {self._refresh_interval} seconds.",
+                    title="Settings Saved",
+                )
 
     async def _find_or_create_tournament(
         self, container: Static, eventId: str, title: str
