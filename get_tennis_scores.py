@@ -175,12 +175,10 @@ class TennisApp(App):
     Main application class for the Tennis Scores TUI.
     """
 
-    # Map keys to actions
     BINDINGS = [("q", "quit", "Quit")]
-    # Link to CSS file
     CSS_PATH = "styles.tcss"
-    # Disable automatic focusing on startup
-    AUTO_FOCUS = None
+    AUTO_FOCUS = None  # Disable automatic focusing on startup
+    TITLE = "Get Tennis Scores"  # Title for the Header widget
 
     def __init__(self) -> None:
         """
