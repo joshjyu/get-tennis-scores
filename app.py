@@ -1,16 +1,17 @@
+from models import TourData, Match, Event
 from textual import events
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Collapsible, Static
 from textual.containers import VerticalScroll
 from espn_client import EspnClient, EspnApiError
-from typing import Any, Dict
+from typing import Any
 
 # CONSTANTS
-REFRESH_INTERVAL = 30  # seconds
+REFRESH_INTERVAL = 30  # Seconds
 CARD_WIDTH = 67  # Match card minimum width
-NAME_WIDTH = 40  # character width for player names
+NAME_WIDTH = 40  # Character width for player names
 SERVER_SYMBOL = " * "  # Symbol to indicate player serving
-WINNER_SYMBOL = "\u2714"  # Character to indicate winner of match
+WINNER_SYMBOL = "\u2714"  # Symbol to indicate winner of match
 
 
 class MatchCard(Static):
@@ -18,7 +19,7 @@ class MatchCard(Static):
     A custom widget to display a multi-line match score box.
     """
 
-    def __init__(self, matchData: Dict[str, Any], **kwargs: Any) -> None:
+    def __init__(self, matchData: Match, **kwargs: Any) -> None:
         """
         Initializes the MatchCard.
 
@@ -71,7 +72,7 @@ class MatchCard(Static):
         }
         return "".join(superscripts.get(char, char) for char in text)
 
-    def update_data(self, newMatchData: Dict[str, Any]) -> None:
+    def update_data(self, newMatchData: Match) -> None:
         """
         Updates the internal data and refreshes the display if needed.
 
@@ -99,81 +100,69 @@ class MatchCard(Static):
           str - The formatted string representing the match box.
         """
         # Get match status
-        matchStatus = (
-            self._matchData.get("status", {}).get("type", {}).get("description", "")
-        )
+        matchStatus = self._matchData.status.type.description
         # Get player info
-        competitors = self._matchData.get("competitors", [])
+        competitors = self._matchData.competitors
 
         # Only display the round name for Scheduled matches
         roundLabel = ""
         if matchStatus == "Scheduled":
-            roundLabel = self._matchData.get("round", {}).get("displayName", "N/A")
+            roundLabel = self._matchData.round.displayName
 
         # Add the match status (and round name if applicable)
         lines = [f"{'':8}{roundLabel:<{NAME_WIDTH-8}} {matchStatus}"]
 
         for comp in competitors:
             # Get player name and seed and prepend seed to player's name
-            name = comp.get("athlete", {}).get("shortName", "TBD")
-            seed = comp.get("curatedRank", {}).get("current")
+            name = comp.athlete.shortName
+            seed = comp.curatedRank.current
+
             seedText = ""
-            # Check seed between 0 and 99 in case placeholder seed exists
-            if seed and str(seed).isdigit() and int(seed) > 0 and int(seed) < 99:
+            # Check seed between 0 and 99 in case a placeholder seed exists
+            if seed and 0 < seed < 99:
                 seedText = f"({seed})"
+
             paddedSeed = f"{seedText:<5}"  # 5 characters wide, left-aligned
             name = f"{paddedSeed}{name}"
 
             # Check if serving
-            isServer = comp.get("possession", False)
-            if isServer:
+            if comp.possession:
                 name = SERVER_SYMBOL + name
             else:
                 name = "   " + name
 
             # Get set scores
             scores = []
-            for scoreDict in comp.get("linescores", []):
-                rawValue = scoreDict.get("value", "")
-                tiebreakValue = scoreDict.get("tiebreak")
+            for scoreObj in comp.linescores:
+                rawValue = scoreObj.value
+                tiebreakValue = scoreObj.tiebreak
 
                 # Convert score to int (default is float), then to str
-                try:
-                    intValue = int(float(rawValue))
+                if rawValue is not None:
+                    intValue = int(rawValue)
                     scoreStr = str(intValue)
 
-                    # Append tiebreak score if player has 6 games
-                    # This accounts for a tiebreak loser or in-progress
                     if intValue == 6 and tiebreakValue is not None:
-                        tiebreakInt = int(float(tiebreakValue))
+                        tiebreakInt = int(tiebreakValue)
                         superStr = self._to_superscript(str(tiebreakInt))
                         scoreStr += superStr
 
-                    # Pad string to 3 characters for vertical alignment
                     scores.append(f"{scoreStr:<3}")
-
-                except (ValueError, TypeError):
+                else:
                     scores.append("-  ")
 
             scoreString = "".join(scores)
 
             # Check if match is completed
-            isCompleted = (
-                self._matchData.get("status", {})
-                .get("type", {})
-                .get("completed", False)
-            )
-
+            isCompleted = self._matchData.status.type.completed
             if isCompleted:
-                # Check if this player is the winner
-                isWinner = comp.get("winner", False)
-                if isWinner:
-                    # Append a winner's symbol if player is the winner
+                if comp.winner:
+                    # Append winner symbol to winner
                     scoreString += " " + WINNER_SYMBOL
                 else:
                     scoreString += "  "
 
-            # Join the player name with player's set score
+            # Join the player name with player's scores
             lines.append(f"{name:{NAME_WIDTH}} {scoreString}")
 
         return "\n".join(lines)  # Add lines on top of each other
@@ -215,18 +204,18 @@ class TennisApp(App):
         """
         yield Header()
         with VerticalScroll(id="tournamentContainer"):
-            # WTA section
-            with Collapsible(
-                title="WTA Tournaments", id="wtaCollapsible", collapsed=False
-            ):
-                # Mount individual WTA tournament collapsibles inside wtaContainer
-                yield Static(id="wtaContainer")
             # ATP section
             with Collapsible(
                 title="ATP Tournaments", id="atpCollapsible", collapsed=False
             ):
                 # Mount ATP tournament collapsibles inside
                 yield Static(id="atpContainer")
+            # WTA section
+            with Collapsible(
+                title="WTA Tournaments", id="wtaCollapsible", collapsed=False
+            ):
+                # Mount individual WTA tournament collapsibles inside wtaContainer
+                yield Static(id="wtaContainer")
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -309,7 +298,7 @@ class TennisApp(App):
         tournamentNode: Collapsible,
         eventId: str,
         matchId: str,
-        matchData: Dict[str, Any],
+        matchData: Match,
     ) -> None:
         """
         Finds a MatchCard to update or creates a new one inside the tournament.
@@ -331,9 +320,7 @@ class TennisApp(App):
                 return
 
         # If it's a new card, get its status to determine its container
-        matchStatus = (
-            matchData.get("status", {}).get("type", {}).get("description", "")
-        )
+        matchStatus = matchData.status.type.description
 
         if matchStatus == "Scheduled":
             # Target the scheduled matches container
@@ -342,9 +329,7 @@ class TennisApp(App):
             )
         else:
             # Group active/completed matches by round
-            roundName = matchData.get("round", {}).get(
-                "displayName", "Unknown Round"
-            )
+            roundName = matchData.round.displayName
 
             # Dynamically create round ID
             roundId = roundName.replace(" ", "_").lower()
@@ -388,9 +373,7 @@ class TennisApp(App):
         newCard = MatchCard(matchData, id=f"match_{matchId}")
         await targetContainer.mount(newCard)
 
-    async def _process_tour_data(
-        self, containerId: str, tourData: Dict[str, Any]
-    ) -> None:
+    async def _process_tour_data(self, containerId: str, tourData: TourData) -> None:
         """
         Processes tournament data for a specific tour (ATP, WTA) and updates the UI.
 
@@ -404,15 +387,13 @@ class TennisApp(App):
         # Map internal container IDs to slug prefixes
         tourMap = {"atpContainer": "mens", "wtaContainer": "womens"}
         tourPrefix = tourMap.get(containerId, "unknown")
-
         container = self.query_one(f"#{containerId}", Static)
-        events = tourData.get("events", [])
 
-        for event in events:
+        for event in tourData.events:
             # Get event info
-            eventId = event.get("id", "UnknownId")
-            name = event.get("name", "Unknown Tournament")
-            venue = event.get("venue", {}).get("displayName", "Unknown")
+            eventId = event.id
+            name = event.name
+            venue = event.venue.displayName
             label = f"{name} ({venue})"  # Tournament label
 
             # Create or find the tournament node
@@ -428,7 +409,7 @@ class TennisApp(App):
         self,
         tournamentNode: Collapsible,
         eventId: str,
-        event: Dict[str, Any],
+        event: Event,
         tourPrefix: str,
     ) -> None:
         """
@@ -449,18 +430,14 @@ class TennisApp(App):
 
         # Map tour name to specific slug
         singlesTargetSlug = f"{tourPrefix}-singles"
-        groupings = event.get("groupings", [])
 
-        for group in groupings:
-            groupMeta = group.get("grouping", {})
-            slug = groupMeta.get("slug", "")
+        for group in event.groupings:
+            slug = group.grouping.slug
 
             # Process matches that match the tour slug
             if slug == singlesTargetSlug:
-                competitions = group.get("competitions", [])
-
-                for match in reversed(competitions):
-                    matchId = match.get("id", "UnknownMatchID")
+                for match in reversed(group.competitions):
+                    matchId = match.id
                     await self._update_match_in_tournament(
                         tournamentNode, eventId, matchId, match
                     )

@@ -1,5 +1,7 @@
 import aiohttp
 from typing import Any, Dict, Optional
+from models import TourData
+from pydantic import ValidationError
 
 
 class EspnApiError(Exception):
@@ -77,9 +79,12 @@ class EspnClient:
             async with session.get(self._wtaUrlAddress) as apiResponse:
                 # Check for good response
                 if apiResponse.status == 200:
-                    return await apiResponse.json()
+                    data = await apiResponse.json()
+                    return TourData(**data)
                 # Otherwise raise error
                 raise EspnApiError(f"HTTP {apiResponse.status}")
+        except ValidationError as e:
+            raise EspnApiError(f"Schema Validation Error: {e}")
         except Exception as e:
             raise EspnApiError(f"Network error: {str(e)}")
 
@@ -98,8 +103,11 @@ class EspnClient:
             async with session.get(self._atpUrlAddress) as apiResponse:
                 # Check for good response
                 if apiResponse.status == 200:
-                    return await apiResponse.json()
+                    data = await apiResponse.json()
+                    return TourData(**data)
                 # Otherwise raise error
                 raise EspnApiError(f"HTTP {apiResponse.status}")
+        except ValidationError as e:
+            raise EspnApiError(f"Schema Validation Error: {e}")
         except Exception as e:
             raise EspnApiError(f"Network error: {str(e)}")
