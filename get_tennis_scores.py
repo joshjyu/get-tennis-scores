@@ -275,7 +275,7 @@ class TennisApp(App):
         Handles the event when the user presses Enter in the Input widget.
 
         Parameters:
-          inputEvent - The interger data the user submits in the Input widget.
+          inputEvent - The integer data the user submits in the Input widget.
 
         Returns:
           None
@@ -301,6 +301,7 @@ class TennisApp(App):
                 # Stop existing timer and create a new one with updated interval
                 if self._update_timer is not None:
                     self._update_timer.stop()
+
                 self._update_timer = self.set_interval(
                     self._refresh_interval, self.update_scores
                 )

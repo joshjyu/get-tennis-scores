@@ -16,6 +16,8 @@ from typing import Optional
 from models import TourData
 from pydantic import ValidationError
 
+DEFAULT_TIMEOUT = 20  # seconds
+
 
 class ApiError(Exception):
     """
@@ -60,7 +62,8 @@ class ApiClient:
           aiohttp.ClientSession - The active asynchronous HTTP session.
         """
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
+            timeout = aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT)
+            self._session = aiohttp.ClientSession(timeout=timeout)
         return self._session
 
     async def close_session(self) -> None:
