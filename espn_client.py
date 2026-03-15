@@ -1,3 +1,16 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 joshjyu
+
+"""
+Disclaimer:
+This module interacts with an undocumented, unofficial API.
+It is provided for educational purposes only. The author makes no guarantees
+regarding the stability, legality, or terms of service compliance of these
+network requests. End-users are solely responsible for any repercussions
+arising from the use of this code, including IP bans or legal action from
+the data provider.
+"""
+
 import aiohttp
 from typing import Optional
 from models import TourData
@@ -14,8 +27,7 @@ class EspnApiError(Exception):
 
 class EspnClient:
     """
-    Class that represents the client for interacting with the ESPN hidden
-    API ecosystem.
+    Class that represents the client for interacting with the ESPN API.
     """
 
     def __init__(self) -> None:

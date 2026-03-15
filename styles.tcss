@@ -1,4 +1,6 @@
-/* styles.tcss */
+/* SPDX-License-Identifier: MIT */
+/* Copyright (c) 2026 joshjyu */
+
 MatchCard {
   border: solid $primary;
   padding: 0 1;

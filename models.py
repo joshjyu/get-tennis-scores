@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 joshjyu
+
 from pydantic import BaseModel, Field
 from typing import List, Optional
 

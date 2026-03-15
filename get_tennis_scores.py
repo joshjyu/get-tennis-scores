@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 joshjyu
+
 from models import TourData, Match, Event
 from textual import events
 from textual.app import App, ComposeResult
@@ -8,6 +11,7 @@ from espn_client import EspnClient, EspnApiError
 from typing import Any
 
 # CONSTANTS
+DEFAULT_THEME = "nord"  # Default theme string
 DEFAULT_REFRESH_INTERVAL = 30  # Seconds
 MIN_REFRESH_INTERVAL = 10  # Seconds
 CARD_WIDTH = 67  # Match card minimum width
@@ -244,6 +248,8 @@ class TennisApp(App):
         Returns:
           None
         """
+        # Default theme
+        self.theme = DEFAULT_THEME
         # First run
         await self.update_scores()
         # Reference to the refresh interval timer
