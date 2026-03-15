@@ -7,7 +7,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Collapsible, Static, Input, Label
 from textual.containers import VerticalScroll, Horizontal
 from textual.validation import Integer
-from espn_client import EspnClient, EspnApiError
+from api_client import ApiClient, ApiError
 from typing import Any
 
 # CONSTANTS
@@ -30,7 +30,7 @@ class MatchCard(Static):
         Initializes the MatchCard.
 
         Parameters:
-          matchData - Dictionary containing match information from ESPN
+          matchData - Dictionary containing match information
           kwargs - Additional arguments for the Static widget
 
         Returns:
@@ -195,7 +195,7 @@ class TennisApp(App):
           None
         """
         super().__init__()
-        self._espnClient = EspnClient()
+        self._apiClient = ApiClient()
         self._refresh_interval = DEFAULT_REFRESH_INTERVAL
         self._update_timer = None
 
@@ -268,7 +268,7 @@ class TennisApp(App):
         Returns:
           None
         """
-        await self._espnClient.close_session()
+        await self._apiClient.close_session()
 
     def on_input_submitted(self, inputEvent: Input.Submitted) -> None:
         """
@@ -453,7 +453,7 @@ class TennisApp(App):
 
         Parameters:
           containerId - The ID of the Static container for the tour.
-          tourData - The raw dictionary data returned from the ESPN API.
+          tourData - The raw dictionary data returned from the API.
 
         Returns:
           None
@@ -492,7 +492,7 @@ class TennisApp(App):
         Parameters:
           tournamentNode - The Collapsible representing the tournament.
           eventId - The unique ID for the tournament event.
-          event - The raw event dictionary from the ESPN API.
+          event - The raw event dictionary from the API.
           tourPrefix - The prefix for the event (mens vs womens).
 
         Returns:
@@ -529,14 +529,14 @@ class TennisApp(App):
         """
         try:
             # Fetch and process WTA data
-            wtaData = await self._espnClient.fetch_wta_scores()
+            wtaData = await self._apiClient.fetch_wta_scores()
             await self._process_tour_data("wtaContainer", wtaData)
 
             # Fetch and process ATP data
-            atpData = await self._espnClient.fetch_atp_scores()
+            atpData = await self._apiClient.fetch_atp_scores()
             await self._process_tour_data("atpContainer", atpData)
 
-        except EspnApiError as e:
+        except ApiError as e:
             self.notify(
                 f"Data fetch failed: {e}",
                 title="Connection Error",

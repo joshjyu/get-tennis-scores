@@ -17,22 +17,22 @@ from models import TourData
 from pydantic import ValidationError
 
 
-class EspnApiError(Exception):
+class ApiError(Exception):
     """
-    Exception raised for ESPN API connection or HTTP errors.
+    Exception raised for API connection or HTTP errors.
     """
 
     pass
 
 
-class EspnClient:
+class ApiClient:
     """
-    Class that represents the client for interacting with the ESPN API.
+    Class that represents the client for interacting with the API.
     """
 
     def __init__(self) -> None:
         """
-        Initializes the ESPN client.
+        Initializes the API client.
 
         Parameters:
           None
@@ -78,7 +78,7 @@ class EspnClient:
 
     async def fetch_wta_scores(self) -> TourData:
         """
-        Fetches the current WTA scoreboard data from ESPN.
+        Fetches the current WTA scoreboard data.
 
         Parameters:
           None
@@ -94,15 +94,15 @@ class EspnClient:
                     data = await apiResponse.json()
                     return TourData(**data)
                 # Otherwise raise error
-                raise EspnApiError(f"HTTP {apiResponse.status}")
+                raise ApiError(f"HTTP {apiResponse.status}")
         except ValidationError as e:
-            raise EspnApiError(f"Schema Validation Error: {e}")
+            raise ApiError(f"Schema Validation Error: {e}")
         except Exception as e:
-            raise EspnApiError(f"Network error: {str(e)}")
+            raise ApiError(f"Network error: {str(e)}")
 
     async def fetch_atp_scores(self) -> TourData:
         """
-        Fetches the current ATP scoreboard data from ESPN.
+        Fetches the current ATP scoreboard data.
 
         Parameters:
           None
@@ -118,8 +118,8 @@ class EspnClient:
                     data = await apiResponse.json()
                     return TourData(**data)
                 # Otherwise raise error
-                raise EspnApiError(f"HTTP {apiResponse.status}")
+                raise ApiError(f"HTTP {apiResponse.status}")
         except ValidationError as e:
-            raise EspnApiError(f"Schema Validation Error: {e}")
+            raise ApiError(f"Schema Validation Error: {e}")
         except Exception as e:
-            raise EspnApiError(f"Network error: {str(e)}")
+            raise ApiError(f"Network error: {str(e)}")
