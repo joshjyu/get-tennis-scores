@@ -1,5 +1,37 @@
 # Get Tennis Scores
 
+Get ATP and WTA tennis live scores quickly in your terminal.
+
+Written in Python, utilizes Textual.
+
+<!-- App Screenshot -->
+<div align="center">
+<img src="assets/app-screenshot.png">
+</div>
+
+## Why a Tennis Scores Terminal App?
+
+Sometimes when I'm working in my terminal (or in Emacs, really), I wanted a quick way to check on ATP and WTA scores, but I don't want to switch to my browser to do it. So I thought why can't I just see it in my terminal?
+
+## Features
+
+* Real-time ATP & WTA match & score tracking
+* Responsive grid layout that adapts to terminal resizing
+* JSON schema validation via Pydantic
+* Adjustable API polling interval
+
+## Limitations
+The tennis score tracking data provided by ESPN's unofficial API is structurally limited.
+
+* **Score Resolution:** Point-by-point tracking (e.g., 15-0, 30-40, Ad-In) is not supported. The data feed exclusively provides aggregated game and set scores.
+* **Tournament Availability:** The API solely tracks tournaments that are currently in progress. It does not provide historical data for past tournaments or schedules for inactive, future events.
+
+## Configuration
+
+The live score tracking refresh interval is adjustable at the top of the UI. The default is set to 30 seconds. A 10 second minimum is enforced to reduce the risk of API rate limiting. 
+
+There is little reason to having a low refresh interval anyway since the score tracks only games and sets, not points.
+
 ## Disclaimer
 
 **Not Affiliated with the Data Provider:** This project is an independent, open-source educational tool. It is not affiliated with, endorsed by, sponsored by, or associated with ESPN, The Walt Disney Company, the ATP Tour, or the WTA Tour. "ESPN" and related trademarks are the property of their respective owners.
