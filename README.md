@@ -11,7 +11,7 @@ Written in Python, utilizes Textual.
 
 ## Why a Tennis Scores Terminal App?
 
-Sometimes when I'm working in my terminal (or in Emacs, really), I wanted a quick way to check on ATP and WTA scores, but I don't want to switch to my browser to do it. So I thought why can't I just see it in my terminal?
+Sometimes when I'm working in my terminal (or in Emacs, really), I want a quick way to check on ATP and WTA scores, but I don't want to switch to my browser to do it. So why can't I just see it in my terminal?
 
 ## Features
 
@@ -21,7 +21,10 @@ Sometimes when I'm working in my terminal (or in Emacs, really), I wanted a quic
 * Adjustable API polling interval
 
 ## Limitations
-The tennis score tracking data provided by ESPN's unofficial API is structurally limited.
+
+Currently the app only tracks ATP and WTA singles events.
+
+Additionally, the tennis score tracking data provided by ESPN's unofficial API is structurally limited.
 
 * **Score Resolution:** Point-by-point tracking (e.g., 15-0, 30-40, Ad-In) is not supported. The data feed exclusively provides aggregated game and set scores.
 * **Tournament Availability:** The API solely tracks tournaments that are currently in progress. It does not provide historical data for past tournaments or schedules for inactive, future events.
@@ -31,6 +34,11 @@ The tennis score tracking data provided by ESPN's unofficial API is structurally
 The live score tracking refresh interval is adjustable at the top of the UI. The default is set to 30 seconds. A 10 second minimum is enforced to reduce the risk of API rate limiting. 
 
 There is little reason to having a low refresh interval anyway since the score tracks only games and sets, not points.
+
+## To-do
+
+- [ ] Incorporate doubles events
+- [ ] Implement a player search feature
 
 ## Disclaimer
 
