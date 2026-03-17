@@ -11,10 +11,10 @@ arising from the use of this code, including IP bans or legal action from
 the data provider.
 """
 
-import aiohttp
+from get_tennis_scores.models import TourData
 from typing import Optional
-from models import TourData
 from pydantic import ValidationError
+import aiohttp
 
 DEFAULT_TIMEOUT = 20  # seconds
 

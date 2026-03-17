@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "get-tennis-scores"
+version = "0.1.0"
+description = "Get ATP and WTA tennis live scores quickly in your terminal."
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+dependencies = [
+    "textual>=0.50.0",
+    "aiohttp>=3.8.0",
+    "pydantic>=2.0.0"
+]
+
+[project.scripts]
+get-tennis-scores = "get_tennis_scores.get_tennis_scores:main"
+
+[tool.setuptools]
+packages = ["get_tennis_scores"]

@@ -1,14 +1,15 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 joshjyu
 
-from models import TourData, Match, Event
+from get_tennis_scores.models import TourData, Match, Event
+from get_tennis_scores.api_client import ApiClient, ApiError
 from textual import events
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Collapsible, Static, Input, Label
 from textual.containers import VerticalScroll, Horizontal
 from textual.validation import Integer
-from api_client import ApiClient, ApiError
 from typing import Any
+import pathlib
 
 # CONSTANTS
 DEFAULT_THEME = "nord"  # Default theme string
@@ -179,8 +180,8 @@ class TennisApp(App):
     Main application class for the Tennis Scores TUI.
     """
 
+    CSS_PATH = pathlib.Path(__file__).parent / "styles.tcss"
     BINDINGS = [("q", "quit", "Quit")]
-    CSS_PATH = "styles.tcss"
     AUTO_FOCUS = None  # Disable automatic focusing on startup
     TITLE = "Get Tennis Scores"  # Title for the Header widget
 
@@ -565,6 +566,13 @@ class TennisApp(App):
             container.styles.grid_columns = "1fr " * columns
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """
+    Entry point for the app.
+    """
     tennisApp = TennisApp()
     tennisApp.run()
+
+
+if __name__ == "__main__":
+    main()
