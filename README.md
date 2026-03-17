@@ -29,6 +29,10 @@ Additionally, the tennis score tracking data provided by ESPN's unofficial API i
 * **Score Resolution:** Point-by-point tracking (e.g., 15-0, 30-40, Ad-In) is not supported. The data feed exclusively provides aggregated game and set scores.
 * **Tournament Availability:** The API solely tracks tournaments that are currently in progress. It does not provide historical data for past tournaments or schedules for inactive, future events.
 
+## Installation
+
+In progress
+
 ## Configuration
 
 The live score tracking refresh interval is adjustable at the top of the UI. The default is set to 30 seconds. A 10 second minimum is enforced to reduce the risk of API rate limiting. 
@@ -38,7 +42,8 @@ There is little reason to having a low refresh interval anyway since the score t
 ## To-do
 
 - [ ] Incorporate doubles events
-- [ ] Implement a player search feature
+- [ ] Add a player search feature
+- [ ] Add an indicator that a match is live
 
 ## Disclaimer
 
