@@ -11,7 +11,7 @@ Written in Python, utilizes Textual.
 
 ## Why a Tennis Scores Terminal App?
 
-Sometimes when I'm working in my terminal (or in Emacs, really), I want a quick way to check on ATP and WTA scores, but I don't want to switch to my browser to do it. So why can't I just see it in my terminal?
+Sometimes when I'm working in my terminal (or in Emacs, really), I want a quick way to check on ATP and WTA scores, but I don't want to switch to my browser to do it. So why not have a way to check the scores in my terminal?
 
 ## Features
 
@@ -29,9 +29,36 @@ Additionally, the tennis score tracking data provided by ESPN's unofficial API i
 * **Score Resolution:** Point-by-point tracking (e.g., 15-0, 30-40, Ad-In) is not supported. The data feed exclusively provides aggregated game and set scores.
 * **Tournament Availability:** The API solely tracks tournaments that are currently in progress. It does not provide historical data for past tournaments or schedules for inactive, future events.
 
-## Installation
+## Installation and Uninstallation
 
-In progress
+To install:
+
+```bash
+# Install via pipx (recommended)
+pipx install get-tennis-scores
+
+# Install with standard pip
+# Recommend using a virtual environment
+pip install get-tennis-scores
+```
+
+To uninstall:
+
+``` bash
+# If you installed using pipx
+pipx uninstall get-tennis-scores
+
+# If you installed using pip
+pip uninstall get-tennis-scores
+```
+
+## Usage
+
+Launch the app in the terminal:
+
+``` bash
+get-tennis-scores
+```
 
 ## Configuration
 
@@ -44,6 +71,7 @@ There is little reason to having a low refresh interval anyway since the score t
 - [ ] Incorporate doubles events
 - [ ] Add a player search feature
 - [ ] Add an indicator that a match is live
+- [ ] Add estimated time and dates for scheduled matches
 
 ## Disclaimer
 
