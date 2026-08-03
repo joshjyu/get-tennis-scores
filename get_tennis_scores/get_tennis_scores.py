@@ -327,7 +327,10 @@ class TennisApp(App):
           Collapsible - The existing or newly instantiated tournament widget.
         """
         for child in container.children:
-            if isinstance(child, Collapsible) and child.id == f"event_{eventId}":
+            if (
+                isinstance(child, Collapsible)
+                and child.id == f"event_{eventId}"
+            ):
                 return child
 
         # Create containers for future matches
@@ -413,7 +416,9 @@ class TennisApp(App):
                 targetContainer.styles.grid_columns = "1fr " * columns
 
                 # Check if we have created any rounds yet
-                existingRounds = list(tournamentNode.query(".round-collapsible"))
+                existingRounds = list(
+                    tournamentNode.query(".round-collapsible")
+                )
                 isFirstRound = len(existingRounds) == 0
 
                 # Wrap new round in a Collapsible
@@ -449,7 +454,9 @@ class TennisApp(App):
         newCard = MatchCard(matchData, id=f"match_{matchId}")
         await targetContainer.mount(newCard)
 
-    async def _process_tour_data(self, containerId: str, tourData: TourData) -> None:
+    async def _process_tour_data(
+        self, containerId: str, tourData: TourData
+    ) -> None:
         """
         Processes tournament data for a specific tour (ATP, WTA) and updates the UI.
 

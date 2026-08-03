@@ -66,13 +66,6 @@ The live score tracking refresh interval is adjustable at the top of the UI. The
 
 There is little reason to having a low refresh interval anyway since the score tracks only games and sets, not points.
 
-## To-do
-
-- [ ] Incorporate doubles events
-- [ ] Add a player search feature
-- [ ] Add an indicator that a match is live
-- [ ] Add estimated time and dates for scheduled matches
-
 ## Disclaimer
 
 **Not Affiliated with the Data Provider:** This project is an independent, open-source educational tool. It is not affiliated with, endorsed by, sponsored by, or associated with ESPN, The Walt Disney Company, the ATP Tour, or the WTA Tour. "ESPN" and related trademarks are the property of their respective owners.

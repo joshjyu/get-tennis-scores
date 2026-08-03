@@ -43,12 +43,8 @@ class ApiClient:
           None
         """
         # Define both ATP & WTA endpoints
-        self._atpUrlAddress = (
-            "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard"
-        )
-        self._wtaUrlAddress = (
-            "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard"
-        )
+        self._atpUrlAddress = "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard"
+        self._wtaUrlAddress = "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard"
         self._session: Optional[aiohttp.ClientSession] = None
 
     async def get_session(self) -> aiohttp.ClientSession:
