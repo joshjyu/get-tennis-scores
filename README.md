@@ -1,3 +1,5 @@
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/get-tennis-scores?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/get-tennis-scores)
+
 # Get Tennis Scores
 
 Get ATP and WTA tennis live scores quickly in your terminal.
